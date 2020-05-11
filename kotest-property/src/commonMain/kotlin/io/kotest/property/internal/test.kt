@@ -10,7 +10,7 @@ import io.kotest.property.PropertyContext
 internal suspend fun test(
    context: PropertyContext,
    config: PropTestConfig,
-   shrinkfn: suspend () -> List<Any?>,
+   shrinkfn: suspend () -> Pair<Throwable?, List<Any?>>,
    inputs: List<Any?>,
    seed: Long,
    fn: suspend () -> Any
@@ -35,16 +35,16 @@ internal suspend fun test(
 
 internal suspend fun handleException(
    context: PropertyContext,
-   shrinkfn: suspend () -> List<Any?>,
+   shrinkfn: suspend () -> Pair<Throwable?, List<Any?>>,
    inputs: List<Any?>,
    seed: Long,
    e: Throwable,
    config: PropTestConfig
 ) {
    if (config.maxFailure == 0) {
-      throwPropertyTestAssertionError(inputs, shrinkfn(), e, context.attempts(), seed)
+      throwPropertyTestAssertionError(inputs, shrinkfn(), e, context.attempts(), seed, config)
    } else if (context.failures() > config.maxFailure) {
       val t = AssertionError("Property failed ${context.failures()} times (maxFailure rate was ${config.maxFailure})")
-      throwPropertyTestAssertionError(inputs, shrinkfn(), t, context.attempts(), seed)
+      throwPropertyTestAssertionError(inputs, shrinkfn(), t, context.attempts(), seed, config)
    }
 }

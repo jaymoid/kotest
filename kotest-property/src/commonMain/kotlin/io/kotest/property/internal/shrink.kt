@@ -21,19 +21,23 @@ internal suspend fun <A> doShrinking(
    initial: RTree<A>,
    mode: ShrinkingMode,
    test: suspend (A) -> Unit
-): A {
+): Pair<Throwable?, A> {
 
    if (initial.isEmpty())
-      return initial.value()
+      return (null to initial.value())
 
    val counter = Counter()
    val tested = mutableSetOf<A>()
    val sb = StringBuilder()
    sb.append("Attempting to shrink failed arg ${initial.value.show().value}\n")
 
-   val candidate = doStep(initial, mode, tested, counter, test, sb) ?: initial.value()
+   val candidate = doStep(initial, mode, tested, counter, test, sb)
+
    result(sb, candidate as Any, counter.count)
-   return candidate
+   return when (candidate) {
+      is StepResult.CompletedShrinking -> Pair(null, initial.value())
+      is StepResult.ExceptionalResult -> Pair(candidate.t, candidate.shrunkValue)
+   }
 }
 
 class Counter {
@@ -41,6 +45,11 @@ class Counter {
    fun inc() = count++
 }
 
+
+sealed class  StepResult<out A> {
+   object CompletedShrinking: StepResult<Nothing>()
+   data class ExceptionalResult<A>(val shrunkValue: A, val t: Throwable) : StepResult<A>()
+}
 /**
  * Performs shrinking on the given RTree. Recurses into the tree for failing cases.
  */
@@ -51,9 +60,9 @@ suspend fun <A> doStep(
    counter: Counter,
    test: suspend (A) -> Unit,
    sb: StringBuilder
-): A? {
+): StepResult<A> {
 
-   if (!mode.isShrinking(counter.count)) return null
+   if (!mode.isShrinking(counter.count)) return StepResult.CompletedShrinking
    val candidates = tree.children.value
 
    candidates.asSequence()
@@ -68,11 +77,16 @@ suspend fun <A> doStep(
             if (PropertyTesting.shouldPrintShrinkSteps)
                sb.append("Shrink #${counter.count}: ${a.show().value} fail\n")
             // this result failed, so we'll recurse in to find further failures otherwise return this
-            return doStep(a, mode, tested, counter, test, sb) ?: a.value()
+            val nextShrink = doStep(a, mode, tested, counter, test, sb)
+            return if (nextShrink == StepResult.CompletedShrinking) {
+               StepResult.ExceptionalResult(a.value(), t)
+            } else {
+               nextShrink
+            }
          }
       }
 
-   return null
+   return StepResult.CompletedShrinking
 }
 
 /**

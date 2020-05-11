@@ -2,6 +2,8 @@ package io.kotest.property.internal
 
 import io.kotest.assertions.failure
 import io.kotest.assertions.show.show
+import io.kotest.property.ExceptionReport
+import io.kotest.property.PropTestConfig
 
 /**
  * Generates an [AssertionError] for a property test without arg details and then throws it.
@@ -22,13 +24,22 @@ internal fun throwPropertyTestAssertionError(
  */
 internal fun throwPropertyTestAssertionError(
    values: List<Any?>,
-   shrinks: List<Any?>,
+   shrinks: Pair<Throwable?,List<Any?>>,
    e: Throwable,
    attempts: Int,
-   seed: Long
+   seed: Long,
+   config: PropTestConfig
 ) {
-   val inputs = values.zip(shrinks).map { PropertyFailureInput(it.first, it.second) }
-   throw propertyAssertionError(e, attempts, seed, inputs)
+
+   val reportedEx = when (config.reportedException) {
+      ExceptionReport.FIRST -> e
+      ExceptionReport.SHRUNK -> shrinks.first ?: RuntimeException("No shrunken exception, fix your types James!")
+   }
+   val failedInputs = when (config.reportedException) {
+      ExceptionReport.FIRST -> values.zip(shrinks.second).map {(orig, _) -> PropertyFailureInput(orig, orig) }
+      ExceptionReport.SHRUNK -> values.zip(shrinks.second).map {(orig, shrunk) -> PropertyFailureInput(orig, shrunk) }
+   }
+   throw propertyAssertionError(reportedEx, attempts, seed, failedInputs)
 }
 
 /**
