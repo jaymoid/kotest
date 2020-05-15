@@ -19,5 +19,9 @@ fun <T> eq(actual: T, expected: T): Throwable? = when {
    actual is Regex && expected is Regex -> RegexEq.equals(actual, expected)
    actual is String && expected is String -> StringEq.equals(actual, expected)
    actual is Number && expected is Number -> NumberEq.equals(actual, expected)
+   actual.isDataClass() && expected.isDataClass() -> DataClassEq.equals(actual as Any, expected as Any)
    else -> DefaultEq.equals(actual as Any, expected as Any)
 }
+
+private fun Any?.isDataClass(): Boolean = this!=null && this::class.isData
+
