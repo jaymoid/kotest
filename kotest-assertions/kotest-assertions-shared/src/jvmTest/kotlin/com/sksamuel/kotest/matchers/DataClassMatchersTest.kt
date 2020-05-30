@@ -45,4 +45,21 @@ class DataClassMatchersTest : StringSpec({
    "Triple nest" {
       Baz(0x43, BooFoo(Foo(321L, "b", "c", 123),8), listOf("egg", 1)) shouldBe Baz(0x42,BooFoo(Foo(123L, "a", "a"), 9), listOf("cheese", 22))
    }
+
+   "override test" {
+     val first = OverriddenEquals(1,2)
+     val second = OverriddenEquals(1,2)
+      first shouldBe second
+
+   }
 })
+
+
+data class OverriddenEquals(val a: Int, val b: Int) {
+   override fun equals(other: Any?): Boolean =
+      if (other is OverriddenEquals)
+         this.a == other.b
+      else
+         false
+
+}
