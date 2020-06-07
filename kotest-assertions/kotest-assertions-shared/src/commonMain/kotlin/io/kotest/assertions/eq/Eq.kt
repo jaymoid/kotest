@@ -22,3 +22,5 @@ fun <T> eq(actual: T, expected: T): Throwable? = when {
    actual.isDataClass() && expected.isDataClass() -> DataClassEq.equals(actual as Any, expected as Any)
    else -> DefaultEq.equals(actual as Any, expected as Any)
 }
+
+expect fun Any?.isDataClass(): Boolean

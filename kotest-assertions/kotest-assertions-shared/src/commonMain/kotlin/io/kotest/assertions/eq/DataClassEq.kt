@@ -15,8 +15,6 @@ internal val <T : Any> KClass<T>.dataClassProperties: List<KCallable<*>>
       return dataClassConstructorParams.map { membersByName[it.name] }.filterNotNull()
    }
 
-internal fun Any?.isDataClass(): Boolean = this != null && this::class.isData
-
 internal object DataClassEq : Eq<Any> {
 
    override fun equals(actual: Any, expected: Any): Throwable? =
