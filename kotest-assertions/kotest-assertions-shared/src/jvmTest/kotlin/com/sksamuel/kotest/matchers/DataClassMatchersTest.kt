@@ -50,7 +50,10 @@ class DataClassMatchersTest : StringSpec({
      val first = OverriddenEquals(1,2)
      val second = OverriddenEquals(1,2)
       first shouldBe second
+   }
 
+   "inner does not differ" {
+      BooFoo(Foo(123L, "a", "a"),8) shouldBe BooFoo(Foo(123L, "a", "a"), 9)
    }
 })
 
